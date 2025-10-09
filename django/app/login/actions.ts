@@ -15,11 +15,12 @@ export async function login(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
-    redirect('/error')
+    console.error('Login error:', error.message)
+    redirect('/login?error=Invalid credentials')
   }
 
   revalidatePath('/', 'layout')
-  redirect('/')
+  redirect('/private')
 }
 
 export async function signup(formData: FormData) {
@@ -33,9 +34,17 @@ export async function signup(formData: FormData) {
   const { error } = await supabase.auth.signUp(data)
 
   if (error) {
-    redirect('/error')
+    console.error('Signup error:', error.message)
+    redirect('/signup?error=Signup failed')
   }
 
   revalidatePath('/', 'layout')
-  redirect('/')
+  redirect('/login?message=Check your email to confirm your account')
+}
+
+export async function logout() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  revalidatePath('/', 'layout')
+  redirect('/login')
 }

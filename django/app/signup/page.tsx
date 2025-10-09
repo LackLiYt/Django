@@ -1,9 +1,9 @@
 import { GalleryVerticalEnd } from "lucide-react"
 import { Suspense } from "react"
 
-import { LoginForm } from "@/components/login-form"
+import { SignupForm } from "@/components/signup-form"
 
-export default function LoginPage({
+export default function SignupPage({
   searchParams,
 }: {
   searchParams: { error?: string; message?: string }
@@ -18,7 +18,7 @@ export default function LoginPage({
           Acme Inc.
         </a>
         <Suspense fallback={<div>Loading...</div>}>
-          <LoginForm error={searchParams.error} message={searchParams.message} />
+          <SignupForm error={searchParams.error} message={searchParams.message} />
         </Suspense>
       </div>
     </div>
