@@ -8,49 +8,50 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Search, Brain, Zap, Shield, Users, BarChart3, ArrowRight, CheckCircle, Star, Quote } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 
 export function LandingPage() {
   const [currentSection, setCurrentSection] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
+  const router = useRouter()
 
   const sections = [
     {
       id: 'hero',
-      title: 'Precision AI Search for your team',
-      subtitle: 'Powered by world-class enterprise search that serves up immediate access to all of the institutional knowledge in your organization, enabling you to build entire AI applications, encapsulate multi-step workflows, and implement LLM agents.',
+      title: 'Django',
+      subtitle: 'Powered by Docling, a world-class open source ocr and document parsing technology. Docling simplifies document processing, parsing diverse formats — including advanced PDF understanding — and providing seamless integrations with the gen AI ecosystem.',
       cta: 'Get Started',
       stats: [
-        { value: '+65', label: 'Hours saved per user per year' },
-        { value: '+85%', label: 'Adoption in under two months' },
-        { value: '+23', label: 'Queries per user per day' },
-        { value: '4x', label: 'ROI in the first year' }
+        { value: '+150', label: 'Minutes saved per user per day' },
+        { value: '+85%', label: 'Faster document processing ' },
+        { value: '+23', label: 'Queries per user per day' }      
       ]
     },
-    {
+    { 
       id: 'problem',
-      title: 'Your collective knowledge is your unique asset',
-      subtitle: 'But it\'s scattered and inaccessible',
-      description: 'Knowledge is scattered across multiple platforms and systems, making it difficult to access and utilize effectively.',
-      platforms: ['SharePoint', 'OneDrive', 'DMS', 'Email', 'Intranet', 'HighQ']
+      title: 'Parsing of multiple document formats and image types',
+      subtitle: 'And more is still coming!',
+      description: 'Making sure that all the documents are parsed and ready to be used for AI applications and more.',
+      platforms: ['DOCX', 'PDF', 'XLSX', 'PPTX', 'Markdown',  'HTML', 'CSV', 'JPG', 'PNG', 'BMP', 'TIFF',  'WEBP']
     },
     {
       id: 'solution',
-      title: 'Search the way you think to unlock everything',
-      subtitle: 'Empower your team with real insights in seconds—not hours. Our Knowledge Search indexes and understands your data, wherever it lives, providing seamless access to your knowledge from a single place.',
+      title: 'Be able to process and transfer all the knowledge',
+      subtitle: 'Use it so you can build your own AI applications, aggregate data from multiple sources and more.',
       features: [
         {
-          title: 'Negotiation Intelligence',
-          description: 'Search to uncover whether opposing counsel ever agreed to a point in a past negotiation.',
+          title: 'Document Parsing',
+          description: 'Parsing of multiple document formats and image types.',
           icon: <Brain className="h-6 w-6" />
         },
         {
-          title: 'Multi-Document Chat',
-          description: 'Ask questions about a client-matter file folder, or any set of documents, for quick insights and review.',
+          title: 'Make your own AI applications pop.',
+          description: 'Have a convenient way to transfer the knowledge to your own AI applications and more.',
           icon: <Search className="h-6 w-6" />
         },
         {
-          title: 'Matter & Client Overview',
+          title: 'Markdown and convenient file outputs',
           description: 'Creates an overview and timeline of all the events pertaining to documents of a selected matter, client or folder.',
           icon: <BarChart3 className="h-6 w-6" />
         }
@@ -58,9 +59,9 @@ export function LandingPage() {
     },
     {
       id: 'workflows',
-      title: 'Build, deploy and orchestrate AI agents powered by your data',
-      subtitle: 'Empower your AI apps and agents with AI Workflows that work like you do and know what your firm knows.',
-      description: 'DeepJudge AI Workflows enable building, deploying, orchestrating, and governing AI agents to drive real ROI. Our LLM-agnostic agentic reasoning executes complex, multi-step tasks—retrieving data from multiple sources and taking actions to get work done with transparency and precision.'
+      title: 'Gather, comprehend and compile your data.',
+      subtitle: 'See the big picture and use it to your advantage.',
+      description: 'Django approach allows you to simplify the process of gathering, comprehending and compiling data from multiple sources and formats.'
     },
     {
       id: 'testimonials',
@@ -88,10 +89,10 @@ export function LandingPage() {
     },
     {
       id: 'cta',
-      title: 'Beyond search, understanding.',
-      subtitle: 'Ready to unlock your organization\'s full potential?',
-      cta: 'Book a Demo',
-      secondaryCta: 'Explore the Product'
+      title: 'Beyond parsing and understanding.',
+      subtitle: 'Ready to unlock your document\'s full potential?',
+      cta: 'Docs',
+      secondaryCta: 'Try for yourself'
     }
   ]
 
@@ -177,12 +178,21 @@ export function LandingPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-300">
+            <Button 
+              size="lg" 
+              className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-300"
+              onClick={() => router.push('/signup')}
+            >
               {sections[0].cta}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-300">
-              Book a Demo
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-300"
+              onClick={() => window.open('https://github.com/LackLiYt/Django', '_blank')}
+            >
+              Github
             </Button>
           </div>
         </div>
@@ -375,11 +385,21 @@ export function LandingPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="text-lg px-8 py-6">
+            <Button 
+              size="lg" 
+              variant="secondary" 
+              className="text-lg px-8 py-6"
+              onClick={() => window.open('https://github.com/docling-project/docling/tree/main/docs', '_blank')}
+            >
               {sections[5].cta}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="text-lg px-8 py-6 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
+              onClick={() => router.push('/signup')}
+            >
               {sections[5].secondaryCta}
             </Button>
           </div>
