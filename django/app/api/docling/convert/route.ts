@@ -3,15 +3,12 @@ import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
     const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+
+    // 1️⃣ Authenticate user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -19,120 +16,141 @@ export async function POST(request: NextRequest) {
     const url = formData.get('url') as string | null;
 
     if (!file && !url) {
-      return NextResponse.json(
-        { error: 'No file or URL provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file or URL provided' }, { status: 400 });
     }
 
-    // Get Docling API URL from environment
-    const doclingUrl = process.env.DOCLING_API_URL || 'https://docling.lackli226.pp.ua/v1';
-    
-    let response;
-    
+    let fileUrl: string | null = null;
+
+    // 2️⃣ Upload original file to Supabase bucket
     if (file) {
-      // Convert file to blob and send to Docling
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const filename = `${user.id}/${Date.now()}-${file.name}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('user-files')
+        .upload(filename, buffer, { contentType: file.type, upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage.from('user-files').getPublicUrl(uploadData.path);
+      fileUrl = publicData.publicUrl;
+    }
+
+    // 3️⃣ Call Docling API
+    const doclingUrl = process.env.DOCLING_API_URL || 'https://docling.lackli226.pp.ua/v1';
+    let response: Response;
+
+    if (file) {
       const buffer = await file.arrayBuffer();
-      
-      // Create form data for Docling
       const doclingFormData = new FormData();
       doclingFormData.append('files', new Blob([buffer]), file.name);
-      
-      // Configure for optimal processing with tesseract and dlparse_v4
       doclingFormData.append('to_formats', 'md');
       doclingFormData.append('to_formats', 'text');
-      doclingFormData.append('image_export_mode', 'placeholder'); // Use placeholders for images
+      doclingFormData.append('image_export_mode', 'placeholder');
       doclingFormData.append('do_ocr', 'true');
       doclingFormData.append('do_table_structure', 'true');
       doclingFormData.append('include_images', 'true');
-      
-      // Use tesseract OCR with dlparse_v4
       doclingFormData.append('ocr_engine', 'tesserocr');
       doclingFormData.append('pdf_backend', 'dlparse_v4');
       doclingFormData.append('ocr_lang', 'eng');
       doclingFormData.append('ocr_lang', 'ukr');
-      
-      // Make request to Docling - only append /convert/file if not already in URL
-      const endpoint = doclingUrl.includes('/v1') 
-        ? `${doclingUrl}/convert/file` 
+
+      const endpoint = doclingUrl.includes('/v1')
+        ? `${doclingUrl}/convert/file`
         : `${doclingUrl}/v1/convert/file`;
-      
+
       response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          ...(process.env.DOCLING_API_KEY && {
-            'X-Api-Key': process.env.DOCLING_API_KEY
-          })
-        },
+        headers: { ...(process.env.DOCLING_API_KEY && { 'X-Api-Key': process.env.DOCLING_API_KEY }) },
         body: doclingFormData,
       });
-    } else if (url) {
-      // Use source endpoint for URL
+    } else {
       const payload = {
         options: {
           to_formats: ['md', 'text'],
-          image_export_mode: 'placeholder', // Use placeholders for images
+          image_export_mode: 'placeholder',
           do_ocr: true,
           do_table_structure: true,
           include_images: true,
           ocr_engine: 'tesserocr',
           pdf_backend: 'dlparse_v4',
-          ocr_lang: ['eng', 'ukr'], // English and Ukrainian languages
+          ocr_lang: ['eng', 'ukr'],
         },
-        http_sources: [{ url: url }]
+        http_sources: [{ url }],
       };
-      
-      // Make request to Docling - only append /convert/source if not already in URL
-      const endpoint = doclingUrl.includes('/v1') 
-        ? `${doclingUrl}/convert/source` 
+
+      const endpoint = doclingUrl.includes('/v1')
+        ? `${doclingUrl}/convert/source`
         : `${doclingUrl}/v1/convert/source`;
-      
+
       response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(process.env.DOCLING_API_KEY && {
-            'X-Api-Key': process.env.DOCLING_API_KEY
-          })
+          ...(process.env.DOCLING_API_KEY && { 'X-Api-Key': process.env.DOCLING_API_KEY }),
         },
         body: JSON.stringify(payload),
       });
     }
 
-    if (!response || !response.ok) {
-      const errorText = await response?.text().catch(() => 'Unknown error');
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
       console.error('Docling API error:', errorText);
-      return NextResponse.json(
-        { error: 'Failed to process document', details: errorText },
-        { status: response?.status || 500 }
-      );
+      return NextResponse.json({ error: 'Failed to process document', details: errorText }, { status: response.status || 500 });
     }
 
+    // 4️⃣ Normalize Docling result
+    let doclingResult: any = null;
     const contentType = response.headers.get('content-type');
-    
-    // Check if response is JSON or a file
+
     if (contentType?.includes('application/json')) {
       const data = await response.json();
-      return NextResponse.json({
-        success: true,
-        data: data
-      });
+      doclingResult = {
+        text_content: data.document?.text_content || data.document?.text || '',
+        md_content: data.document?.md_content || data.document?.md || '',
+      };
     } else {
-      // Handle file response (zip)
+      // ZIP/binary from Docling
       const blob = await response.blob();
-      return new NextResponse(blob, {
-        headers: {
-          'Content-Type': 'application/zip',
-          'Content-Disposition': 'attachment; filename="converted.zip"'
-        }
-      });
+      const arrayBuffer = await blob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const filename = `${user.id}/${Date.now()}-docling.zip`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('user-files')
+        .upload(filename, buffer, { contentType: 'application/zip', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicData } = supabase.storage.from('user-files').getPublicUrl(uploadData.path);
+      const zipUrl = publicData.publicUrl;
+
+      doclingResult = {
+        text_content: `File processed. Download from: ${zipUrl}`,
+        md_content: '',
+        zip_file_url: zipUrl,
+      };
     }
+
+    // 5️⃣ Insert record into user_files table
+    const { data: fileRecord, error: insertError } = await supabase
+      .from('user_files')
+      .insert({
+        user_id: user.id,
+        file_name: file?.name || url || 'document',
+        file_url: fileUrl || '', // original uploaded file
+        docling_result: doclingResult,
+      })
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    return NextResponse.json({ success: true, data: fileRecord });
+
   } catch (error: any) {
-    console.error('Docling conversion error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
-      { status: 500 }
-    );
+    console.error('Conversion error:', error);
+    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
   }
 }
-
