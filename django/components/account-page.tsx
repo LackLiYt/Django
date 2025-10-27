@@ -35,42 +35,35 @@ interface AccountPageProps {
 export function AccountPage({ user }: AccountPageProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [showRePassword, setShowRePassword] = useState(false)
+  const [showKycAlert, setShowKycAlert] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   
-  const getInitialFormData = () => {
-    if (!user) {
-      return {
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        address: 'No.35 Heavens colony',
-        dobDay: '25',
-        dobMonth: '03',
-        dobYear: '1993'
-      };
-    }
-    const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
-    const nameParts = fullName.split(' ');
-    return {
-      firstName: nameParts[0] || '',
-      lastName: nameParts.slice(1).join(' ') || '',
-      email: user.email || '',
-      password: '',
-      confirmPassword: '',
-      address: 'No.35 Heavens colony',
-      dobDay: '25',
-      dobMonth: '03',
-      dobYear: '1993'
-    };
-  };
-
   // Form state
-  const [formData, setFormData] = useState(getInitialFormData());
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  })
   
   const supabase = createClient()
+  
+  useEffect(() => {
+    // Initialize form with user data
+    if (user) {
+      const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || ''
+      const nameParts = fullName.split(' ')
+      setFormData({
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        email: user.email || '',
+        password: '',
+        confirmPassword: ''
+      })
+    }
+  }, [user])
 
   const sidebarItems = [
     { icon: Home, label: "Dashboard", href: "/dashboard" },
@@ -215,6 +208,10 @@ export function AccountPage({ user }: AccountPageProps) {
                     </BreadcrumbItem>
                     <BreadcrumbSeparator />
                     <BreadcrumbItem>
+                      <BreadcrumbLink href="/profile">Profile</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
                       <BreadcrumbPage>My Account</BreadcrumbPage>
                     </BreadcrumbItem>
                   </BreadcrumbList>
@@ -267,31 +264,20 @@ export function AccountPage({ user }: AccountPageProps) {
 
                     <div className="space-y-2">
                       <Label htmlFor="address">Address</Label>
-                      <Input 
-                        id="address" 
-                        value={formData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                      />
+                      <Input id="address" defaultValue="No.35 Heavens colony" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input id="city" defaultValue="Chennai" />
                     </div>
 
                     <div className="space-y-2">
                       <Label>Date of Birth</Label>
                       <div className="grid grid-cols-3 gap-2">
-                        <Input 
-                          placeholder="Day" 
-                          value={formData.dobDay}
-                          onChange={(e) => handleInputChange('dobDay', e.target.value)}
-                        />
-                        <Input 
-                          placeholder="Month" 
-                          value={formData.dobMonth}
-                          onChange={(e) => handleInputChange('dobMonth', e.target.value)}
-                        />
-                        <Input 
-                          placeholder="Year" 
-                          value={formData.dobYear}
-                          onChange={(e) => handleInputChange('dobYear', e.target.value)}
-                        />
+                        <Input placeholder="Day" defaultValue="25" />
+                        <Input placeholder="Month" defaultValue="03" />
+                        <Input placeholder="Year" defaultValue="1993" />
                       </div>
                     </div>
 
@@ -308,10 +294,29 @@ export function AccountPage({ user }: AccountPageProps) {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="investorType">Investor type</Label>
+                      <Select defaultValue="resident">
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="resident">Resident Indian Citizen</SelectItem>
+                          <SelectItem value="nri">Non-Resident Indian</SelectItem>
+                          <SelectItem value="foreign">Foreign National</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   {/* Right Column */}
                   <div className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Contacts</Label>
+                      <Input id="phone" defaultValue="+91 98664 *****" />
+                    </div>
+
                     <div className="space-y-2">
                       <Label htmlFor="email">E-mail Id</Label>
                       <Input 
@@ -376,6 +381,24 @@ export function AccountPage({ user }: AccountPageProps) {
                   </div>
                 </div>
 
+                {/* KYC Alert */}
+                {showKycAlert && (
+                  <Alert className="mt-8 border-yellow-200 bg-yellow-50">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800">
+                      Register your KYC details here
+                    </AlertDescription>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-2 top-2 h-6 w-6 p-0"
+                      onClick={() => setShowKycAlert(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </Alert>
+                )}
+
                 {/* Message Display */}
                 {message && (
                   <Alert className={message.type === 'error' ? 'mt-8 border-red-200 bg-red-50' : 'mt-8 border-green-200 bg-green-50'}>
@@ -399,7 +422,13 @@ export function AccountPage({ user }: AccountPageProps) {
                   <Button 
                     variant="outline" 
                     onClick={() => {
-                      setFormData(getInitialFormData())
+                      setFormData({
+                        firstName: user.user_metadata?.full_name?.split(' ')[0] || '',
+                        lastName: user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+                        email: user.email || '',
+                        password: '',
+                        confirmPassword: ''
+                      })
                       setMessage(null)
                     }}
                   >

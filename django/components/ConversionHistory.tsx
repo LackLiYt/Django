@@ -1,4 +1,4 @@
-import { FileText, Download, X, Trash2 } from "lucide-react";
+import { FileText, Download, X, Trash2, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card1";
 import { Button } from "@/components/ui/button1";
 import { ScrollArea } from "@/components/ui/scroll-area1";
@@ -15,6 +15,9 @@ interface ConversionRecord {
   date: string;
   textPreview: string;
   fullText: string;
+  markdownText?: string;
+  status?: 'processing' | 'success' | 'error';
+  processingTime?: number;
 }
 
 interface ConversionHistoryProps {
@@ -32,12 +35,15 @@ export default function ConversionHistory({
   onDelete,
   onRestore,
 }: ConversionHistoryProps) {
-  const handleDownload = (record: ConversionRecord) => {
-    const blob = new Blob([record.fullText], { type: 'text/plain' });
+  const handleDownload = (record: ConversionRecord, format: 'txt' | 'md' = 'txt') => {
+    const content = format === 'md' && record.markdownText ? record.markdownText : record.fullText;
+    const mimeType = format === 'md' ? 'text/markdown' : 'text/plain';
+    
+    const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${record.fileName.replace('.pdf', '')}-extracted.txt`;
+    a.download = `${record.fileName.replace(/\.(pdf|docx?|pptx?|xlsx?|txt|md|html|csv)$/i, '')}-extracted.${format === 'md' ? 'md' : 'txt'}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -69,11 +75,27 @@ export default function ConversionHistory({
                       <FileText className="w-8 h-8 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium font-mono text-sm truncate mb-1">
-                        {record.fileName}
-                      </h4>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium font-mono text-sm truncate">
+                          {record.fileName}
+                        </h4>
+                        {record.status === 'processing' && (
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                        )}
+                        {record.status === 'success' && (
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        )}
+                        {record.status === 'error' && (
+                          <AlertCircle className="w-4 h-4 text-destructive" />
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground mb-2">
                         {record.date}
+                        {record.processingTime && (
+                          <span className="ml-2">
+                            • {record.processingTime.toFixed(2)}s
+                          </span>
+                        )}
                       </p>
                       <p className="text-sm text-muted-foreground line-clamp-2">
                         {record.textPreview}
@@ -84,18 +106,35 @@ export default function ConversionHistory({
                         size="icon"
                         variant="ghost"
                         onClick={() => onRestore(record)}
+                        disabled={record.status === 'processing' || record.status === 'error'}
                         data-testid={`button-restore-${record.id}`}
                       >
                         <FileText className="w-4 h-4" />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDownload(record)}
-                        data-testid={`button-download-${record.id}`}
-                      >
-                        <Download className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDownload(record, 'txt')}
+                          disabled={record.status === 'processing' || record.status === 'error'}
+                          data-testid={`button-download-${record.id}-txt`}
+                          title="Download as TXT"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        {record.markdownText && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDownload(record, 'md')}
+                            disabled={record.status === 'processing' || record.status === 'error'}
+                            data-testid={`button-download-${record.id}-md`}
+                            title="Download as Markdown"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                       <Button
                         size="icon"
                         variant="ghost"
