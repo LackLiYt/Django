@@ -181,7 +181,7 @@ export function LandingPage() {
             <Button 
               size="lg" 
               className="text-lg px-8 py-6 hover:scale-105 transition-transform duration-300"
-              onClick={() => router.push('/signup')}
+              onClick={() => router.push('/account')}
             >
               {sections[0].cta}
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -398,7 +398,7 @@ export function LandingPage() {
               size="lg" 
               variant="outline" 
               className="text-lg px-8 py-6 border-primary-foreground text-primary-foreground hover:bg-primary-foreground hover:text-primary"
-              onClick={() => router.push('/signup')}
+              onClick={() => router.push('/account')}
             >
               {sections[5].secondaryCta}
             </Button>
