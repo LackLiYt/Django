@@ -3,7 +3,7 @@ import { Suspense } from "react"
 
 import { SignupForm } from "@/components/signup-form"
 
-export default function SignupPage({
+export default async function SignupPage({
   searchParams,
 }: {
   searchParams: { error?: string; message?: string }
@@ -18,7 +18,7 @@ export default function SignupPage({
           Acme Inc.
         </a>
         <Suspense fallback={<div>Loading...</div>}>
-          <SignupForm error={searchParams.error} message={searchParams.message} />
+          <SignupForm error={await searchParams.error} message={await searchParams.message} />
         </Suspense>
       </div>
     </div>
