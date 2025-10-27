@@ -3,7 +3,7 @@ import { Suspense } from "react"
 
 import { LoginForm } from "@/components/login-form"
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams: { error?: string; message?: string }
@@ -18,7 +18,7 @@ export default function LoginPage({
           Acme Inc.
         </a>
         <Suspense fallback={<div>Loading...</div>}>
-          <LoginForm error={searchParams.error} message={searchParams.message} />
+          <LoginForm error={await searchParams.error} message={await searchParams.message} />
         </Suspense>
       </div>
     </div>
