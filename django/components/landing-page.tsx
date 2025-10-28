@@ -8,14 +8,16 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Search, Brain, Zap, Shield, Users, BarChart3, ArrowRight, CheckCircle, Star, Quote } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 
 export function LandingPage() {
   const [currentSection, setCurrentSection] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
   const sectionRefs = useRef<(HTMLDivElement | null)[]>([])
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const isAnimatingRef = useRef(false)
+  const targetIndexRef = useRef<number | null>(null)
   const router = useRouter()
 
   const sections = [
@@ -71,20 +73,20 @@ export function LandingPage() {
       testimonials: [
         {
           quote: "The adoption rate has been remarkable, with more than 80% of our legal professionals incorporating it into their workflow and a level of engagement that is unparalleled compared with other legal tech tools at the firm.",
-          author: "David Oser",
-          role: "Partner in M&A at Homburger",
+          author: "Rostislav Furda",
+          role: "Totaly not a founder of a startup",
           avatar: "/api/placeholder/40/40"
         },
         {
-          quote: "The output from DeepJudge's search function can then seamlessly connect with a generative AI-based workflow to help our people to efficiently deliver high-quality, consistent value for our clients.",
-          author: "Fedor Poskriakov",
-          role: "Deputy Managing Partner at Lenz & Staehelin",
+          quote: "The output from Django search function can then seamlessly connect with a generative AI-based workflow to help our people to efficiently deliver high-quality, consistent value for our clients.",
+          author: "Nazarii Seniv",
+          role: "Totaly not a founder of a startup",
           avatar: "/api/placeholder/40/40"
         },
         {
           quote: "Instead of hunting for documents to upload to an AI platform, everything you need is already there. Fast, efficient, and compliant access to the right information is the foundation for AI applications that help us do more with our knowledge base.",
-          author: "Joe Green",
-          role: "Chief Innovation Officer at Gunderson Dettmer",
+          author: "Olexii Dmytruk",
+          role: "Totaly not a founder of a startup",
           avatar: "/api/placeholder/40/40"
         }
       ]
@@ -100,54 +102,76 @@ export function LandingPage() {
 
   useEffect(() => {
     setIsVisible(true)
-    
-    const handleScroll = () => {
-      if (isAnimatingRef.current) return
-      const scrollPosition = window.scrollY
-      const windowHeight = window.innerHeight
-      const sectionIndex = Math.round(scrollPosition / windowHeight)
-      setCurrentSection(Math.min(sectionIndex, sections.length - 1))
-    }
 
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      if (isAnimatingRef.current) return
-      const direction = e.deltaY > 0 ? 1 : -1
-      const targetIndex = Math.max(0, Math.min(sections.length - 1, currentSection + direction))
-      if (targetIndex === currentSection) return
-      isAnimatingRef.current = true
-      scrollToSection(targetIndex)
-      // allow the smooth scroll to complete before next step
-      const durationMs = 700
-      setTimeout(() => {
-        isAnimatingRef.current = false
-        setCurrentSection(targetIndex)
-      }, durationMs)
-    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let maxRatio = 0
+        let indexToSet = currentSection
+        for (const entry of entries) {
+          const idxAttr = entry.target.getAttribute('data-section-index')
+          const idx = idxAttr ? parseInt(idxAttr, 10) : -1
+          if (idx >= 0 && entry.intersectionRatio > maxRatio) {
+            maxRatio = entry.intersectionRatio
+            indexToSet = idx
+          }
+        }
+        if (indexToSet !== currentSection) {
+          setCurrentSection(indexToSet)
+          if (targetIndexRef.current === indexToSet) {
+            // reached the intended slide
+            isAnimatingRef.current = false
+            targetIndexRef.current = null
+          }
+        }
+      },
+      { root: null, rootMargin: '0px', threshold: [0.3, 0.6, 0.9] }
+    )
 
-    window.addEventListener('scroll', handleScroll)
-    window.addEventListener('wheel', handleWheel, { passive: false })
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      window.removeEventListener('wheel', handleWheel as any)
-    }
-  }, [currentSection, sections.length])
+    sectionRefs.current.forEach((el, idx) => {
+      if (el) {
+        el.setAttribute('data-section-index', String(idx))
+        observer.observe(el)
+      }
+    })
+
+    return () => observer.disconnect()
+  }, [sections.length, currentSection])
 
   const scrollToSection = (index: number) => {
     const targetElement = sectionRefs.current[index]
     if (targetElement) {
+      targetIndexRef.current = index
+      isAnimatingRef.current = true
       targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    } else {
-      window.scrollTo({
-        top: index * window.innerHeight,
-        behavior: 'smooth'
-      })
+      // safety release in case IO doesn't fire (older browsers)
+      window.setTimeout(() => {
+        if (targetIndexRef.current === index) {
+          isAnimatingRef.current = false
+          targetIndexRef.current = null
+        }
+      }, 800)
     }
   }
 
+  const handleWheel = useCallback((e: WheelEvent) => {
+    if (!containerRef.current) return
+    e.preventDefault()
+    if (isAnimatingRef.current) return
+    const direction = e.deltaY > 0 ? 1 : -1
+    const next = Math.max(0, Math.min(sections.length - 1, currentSection + direction))
+    if (next === currentSection) return
+    scrollToSection(next)
+  }, [currentSection, sections.length])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    el.addEventListener('wheel', handleWheel, { passive: false })
+    return () => el.removeEventListener('wheel', handleWheel as any)
+  }, [handleWheel])
+
   return (
-    <div className="relative h-screen overflow-y-scroll snap-y snap-mandatory">
+    <div ref={containerRef} className="relative h-screen overflow-y-auto snap-y snap-mandatory scroll-smooth overscroll-contain">
       {/* Navigation Dots */}
       <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-50 space-y-2">
         {sections.map((_, index) => {
@@ -171,8 +195,8 @@ export function LandingPage() {
       {/* Hero Section */}
       <section 
         ref={(el) => { sectionRefs.current[0] = el as HTMLDivElement }}
-        className={`min-h-screen snap-start flex items-center justify-center bg-gradient-to-br from-background to-muted/20 px-8 transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        className={`min-h-screen snap-start flex items-center justify-center bg-gradient-to-br from-background to-muted/20 px-8 transition-all duration-700 ${
+          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
         }`}
       >
         <div className="max-w-6xl mx-auto text-center space-y-8">
@@ -313,12 +337,12 @@ export function LandingPage() {
                   <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Zap className="h-5 w-5 text-primary" />
                   </div>
-                  <CardTitle>Automate mission-critical workflows</CardTitle>
+                  <CardTitle>Deep dive in your documents</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 <CardDescription className="text-base">
-                  DeepJudge AI Workflows enable building, deploying, orchestrating, and governing AI agents to drive real ROI.
+                  Django Workflows enable reading a whole lot of documents and give user the ability to use it.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -329,12 +353,12 @@ export function LandingPage() {
                   <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Shield className="h-5 w-5 text-primary" />
                   </div>
-                  <CardTitle>Transparency and precision</CardTitle>
+                  <CardTitle>Transparency and privacy</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 <CardDescription className="text-base">
-                  Our LLM-agnostic agentic reasoning executes complex, multi-step tasks with complete transparency.
+                  Our robust and secure architecture ensures that the user's data is protected and privacy is maintained.
                 </CardDescription>
               </CardContent>
             </Card>
