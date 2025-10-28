@@ -15,7 +15,7 @@ export default async function SignupPage({
           <div className="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
             <GalleryVerticalEnd className="size-4" />
           </div>
-          
+          Acme Inc.
         </a>
         <Suspense fallback={<div>Loading...</div>}>
           <SignupForm error={await searchParams.error} message={await searchParams.message} />
