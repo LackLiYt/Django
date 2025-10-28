@@ -94,14 +94,27 @@
       setConversionHistory(prev => [processingRecord, ...prev]);
 
       try {
-        const formData = new FormData();
-        if (selectedFile) formData.append('file', selectedFile);
-        else if (url) formData.append('url', url);
-
-        const response = await fetch('/api/docling/convert', {
-          method: 'POST',
-          body: formData,
-        });
+        let response: Response;
+        if (selectedFile) {
+          const fd = new FormData();
+          fd.append('files', selectedFile);
+          // reasonable defaults; can be extended by UI controls
+          fd.append('to_formats', 'md');
+          fd.append('to_formats', 'text');
+          response = await fetch('/api/docling/convert/file', { method: 'POST', body: fd });
+        } else {
+          const payload = {
+            options: {
+              to_formats: ['md', 'text'],
+            },
+            http_sources: [{ url }],
+          };
+          response = await fetch('/api/docling/convert/source', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
 
         if (!response.ok) throw new Error('Failed to convert document');
         const result = await response.json();
@@ -187,8 +200,15 @@
       setMarkdownText("");
     };
 
-    const handleDeleteHistory = (id: string) => {
-      setConversionHistory(prev => prev.filter(record => record.id !== id));
+    const handleDeleteHistory = async (id: string) => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        await supabase.from('user_files').delete().eq('id', id).eq('user_id', user.id);
+        setConversionHistory(prev => prev.filter(record => record.id !== id));
+      } catch (e) {
+        console.error('Failed to delete history item', e);
+      }
     };
 
     const handleRestoreFromHistory = (record: ConversionRecord) => {

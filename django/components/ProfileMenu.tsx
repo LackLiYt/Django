@@ -9,19 +9,49 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface ProfileMenuProps {
   onShowHistory: () => void;
 }
 
 export default function ProfileMenu({ onShowHistory }: ProfileMenuProps) {
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let unsubscribe: (() => void) | undefined;
+
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user ?? null);
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+      });
+      unsubscribe = () => subscription.unsubscribe();
+    };
+    init();
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, []);
+
   const handleSettings = () => {
-    console.log('Settings clicked');
+    // no-op for now
   };
 
-  const handleLogout = () => {
-    console.log('Logout clicked');
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/login';
   };
+
+  const initials = (user?.email || 'U')
+    .split('@')[0]
+    .split(/[._-]/)
+    .map(part => part.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('') || 'U';
 
   return (
     <DropdownMenu>
@@ -43,8 +73,8 @@ export default function ProfileMenu({ onShowHistory }: ProfileMenuProps) {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">John Doe</p>
-            <p className="text-xs text-muted-foreground">john.doe@example.com</p>
+            <p className="text-sm font-medium">{user?.email || 'Guest'}</p>
+            <p className="text-xs text-muted-foreground">{user?.id || ''}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
