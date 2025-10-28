@@ -82,7 +82,7 @@ export default function TextOutputArea({ extractedText, markdownText, sourceName
                 ol: ({node, ...props}) => <ol className="mb-4 ml-6 list-decimal" {...props} />,
                 li: ({node, ...props}) => <li className="mb-2" {...props} />,
                 // Customize code
-                code: ({node, inline, ...props}) => 
+                code: ({ inline, ...props }: any) => 
                   inline ? (
                     <code className="px-1.5 py-0.5 rounded bg-muted text-sm font-mono" {...props} />
                   ) : (
@@ -119,7 +119,7 @@ export default function TextOutputArea({ extractedText, markdownText, sourceName
       <div className="flex flex-col gap-4">
         <Button
           onClick={handleCopy}
-          className="w-full bg-gradient-to-br from-primary to-secondary text-primary-foreground"
+          className="w-full"
           data-testid="button-copy"
         >
           {copied ? (
@@ -138,7 +138,8 @@ export default function TextOutputArea({ extractedText, markdownText, sourceName
         <div className="flex flex-col sm:flex-row gap-3">
           <Button
             onClick={() => handleDownload('txt')}
-            className="flex-1 bg-gradient-to-r from-primary via-accent to-secondary text-primary-foreground"
+            variant="secondary"
+            className="flex-1"
             data-testid="button-download-txt"
           >
             <Download className="w-4 h-4 mr-2" />
@@ -147,7 +148,8 @@ export default function TextOutputArea({ extractedText, markdownText, sourceName
           {markdownText && (
             <Button
               onClick={() => handleDownload('md')}
-              className="flex-1 bg-gradient-to-r from-secondary via-accent to-primary text-primary-foreground"
+              variant="outline"
+              className="flex-1"
               data-testid="button-download-md"
             >
               <Download className="w-4 h-4 mr-2" />

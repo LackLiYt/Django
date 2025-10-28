@@ -11,8 +11,9 @@ export default function PlansPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <div className="max-w-5xl mx-auto px-6 py-16">
-        <div className="flex items-center justify-between mb-8">
-          <div className="text-center flex-1">
+        <div className="grid grid-cols-3 items-center mb-8">
+          <div />
+          <div className="text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary mb-4">
               <Sparkles className="w-4 h-4" />
               <span className="text-xs font-medium">Simple, transparent pricing</span>
@@ -20,12 +21,14 @@ export default function PlansPage() {
             <h1 className="text-4xl font-bold tracking-tight">Choose your plan</h1>
             <p className="text-muted-foreground mt-2">Upgrade anytime. Cancel anytime.</p>
           </div>
-          <Link href="/account" className="ml-4 whitespace-nowrap">
-            <Button variant="outline">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Account
-            </Button>
-          </Link>
+          <div className="justify-self-end">
+            <Link href="/account">
+              <Button variant="outline">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Account
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">

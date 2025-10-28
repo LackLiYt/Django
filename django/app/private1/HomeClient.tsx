@@ -24,7 +24,6 @@
 
   export default function Home() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [url, setUrl] = useState<string>("");
     const [isProcessing, setIsProcessing] = useState(false);
     const [extractedText, setExtractedText] = useState<string>("");
     const [markdownText, setMarkdownText] = useState<string>("");
@@ -72,14 +71,14 @@
     }, []);
 
     // -------------------------------
-    // Conversion function (unchanged)
+    // Conversion function (file only)
     // -------------------------------
     const handleConvert = async () => {
-      if (!selectedFile && !url) return;
+      if (!selectedFile) return;
 
       setIsProcessing(true);
       const startTime = Date.now();
-      const sourceName = selectedFile?.name || url.split('/').pop() || 'document';
+      const sourceName = selectedFile.name;
       const recordId = Date.now().toString();
 
       const processingRecord: ConversionRecord = {
@@ -94,24 +93,9 @@
       setConversionHistory(prev => [processingRecord, ...prev]);
 
       try {
-        let response: Response;
-        if (selectedFile) {
-          const fd = new FormData();
-          fd.append('file', selectedFile);
-          response = await fetch('/api/docling/convert', { method: 'POST', body: fd });
-        } else {
-          const payload = {
-            options: {
-              to_formats: ['md', 'text'],
-            },
-            http_sources: [{ url }],
-          };
-          response = await fetch('/api/docling/convert/source', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-        }
+        const fd = new FormData();
+        fd.append('file', selectedFile);
+        const response = await fetch('/api/docling/convert', { method: 'POST', body: fd });
 
         if (!response.ok) {
           let serverMessage = '';
@@ -197,11 +181,10 @@
     };
 
     // -------------------------------
-    // Other handlers (unchanged)
+    // Other handlers
     // -------------------------------
     const handleReset = () => {
       setSelectedFile(null);
-      setUrl("");
       setExtractedText("");
       setMarkdownText("");
     };
@@ -223,11 +206,11 @@
       setShowHistory(false);
     };
 
-    const canConvert = (selectedFile || url) && !isProcessing;
-    const sourceName = selectedFile?.name || url.split('/').pop() || 'document';
+    const canConvert = selectedFile && !isProcessing;
+    const sourceName = selectedFile?.name || 'document';
 
     const currentExt = (() => {
-      const name = selectedFile?.name || url;
+      const name = selectedFile?.name;
       if (!name) return '';
       const last = name.split('?')[0].split('#')[0].split('/').pop() || '';
       const parts = last.split('.');
@@ -245,15 +228,12 @@
         <Header onShowHistory={() => setShowHistory(true)} />
         
         <div className="relative z-10 max-w-4xl mx-auto px-6 py-16">
-          {/* ... your conversion UI unchanged ... */}
           <div className="max-w-2xl mx-auto space-y-8">
             {!extractedText ? (
               <>
                 <DocumentUploadZone
                   onFileSelect={setSelectedFile}
-                  onUrlChange={setUrl}
                   selectedFile={selectedFile}
-                  url={url}
                   isProcessing={isProcessing}
                 />
 
