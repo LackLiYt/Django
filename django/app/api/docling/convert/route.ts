@@ -21,11 +21,23 @@ export async function POST(request: NextRequest) {
 
     let fileUrl: string | null = null;
 
+    // Helper: sanitize filename for safe uploads
+    const sanitizeFileName = (name: string): string => {
+      const normalized = name.normalize('NFC');
+      return normalized
+        .replace(/[^\w.\-]+/g, '_') // replace non-latin/special chars
+        .replace(/_+/g, '_')        // collapse underscores
+        .trim();
+    };
+
     // 2️⃣ Upload original file to Supabase bucket
     if (file) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      const filename = `${user.id}/${Date.now()}-${file.name}`;
+
+      const originalName = file.name;
+      const safeName = sanitizeFileName(originalName);
+      const filename = `${user.id}/${Date.now()}-${safeName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('user-files')
@@ -43,8 +55,11 @@ export async function POST(request: NextRequest) {
 
     if (file) {
       const buffer = await file.arrayBuffer();
+      const originalName = file.name;
+      const safeName = sanitizeFileName(originalName);
+
       const doclingFormData = new FormData();
-      doclingFormData.append('files', new Blob([buffer]), file.name);
+      doclingFormData.append('files', new Blob([buffer]), safeName);
       doclingFormData.append('to_formats', 'md');
       doclingFormData.append('to_formats', 'text');
       doclingFormData.append('image_export_mode', 'placeholder');
@@ -97,7 +112,10 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
       console.error('Docling API error:', errorText);
-      return NextResponse.json({ error: 'Failed to process document', details: errorText }, { status: response.status || 500 });
+      return NextResponse.json(
+        { error: 'Failed to process document', details: errorText },
+        { status: response.status || 500 }
+      );
     }
 
     // 4️⃣ Normalize Docling result
@@ -138,8 +156,8 @@ export async function POST(request: NextRequest) {
       .from('user_files')
       .insert({
         user_id: user.id,
-        file_name: file?.name || url || 'document',
-        file_url: fileUrl || '', // original uploaded file
+        file_name: file?.name || url || 'document', // keep original name for UI
+        file_url: fileUrl || '',
         docling_result: doclingResult,
       })
       .select()
@@ -151,6 +169,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Conversion error:', error);
-    return NextResponse.json({ error: 'Internal server error', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
   }
 }

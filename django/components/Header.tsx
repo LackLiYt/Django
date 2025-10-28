@@ -16,7 +16,7 @@ export default function Header({ onShowHistory }: HeaderProps) {
             </div>
             <div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                PDFExtract
+                Django
               </h1>
               <p className="text-xs text-muted-foreground">Text Converter</p>
             </div>
