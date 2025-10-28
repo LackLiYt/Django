@@ -97,11 +97,8 @@
         let response: Response;
         if (selectedFile) {
           const fd = new FormData();
-          fd.append('files', selectedFile);
-          // reasonable defaults; can be extended by UI controls
-          fd.append('to_formats', 'md');
-          fd.append('to_formats', 'text');
-          response = await fetch('/api/docling/convert/file', { method: 'POST', body: fd });
+          fd.append('file', selectedFile);
+          response = await fetch('/api/docling/convert', { method: 'POST', body: fd });
         } else {
           const payload = {
             options: {
@@ -116,7 +113,16 @@
           });
         }
 
-        if (!response.ok) throw new Error('Failed to convert document');
+        if (!response.ok) {
+          let serverMessage = '';
+          try {
+            const errJson = await response.json();
+            serverMessage = errJson?.error || errJson?.details || '';
+          } catch (_) {
+            try { serverMessage = await response.text(); } catch (_) {}
+          }
+          throw new Error(serverMessage || 'Failed to convert document');
+        }
         const result = await response.json();
 
         const doc = result.data?.docling_result;
@@ -220,6 +226,19 @@
     const canConvert = (selectedFile || url) && !isProcessing;
     const sourceName = selectedFile?.name || url.split('/').pop() || 'document';
 
+    const currentExt = (() => {
+      const name = selectedFile?.name || url;
+      if (!name) return '';
+      const last = name.split('?')[0].split('#')[0].split('/').pop() || '';
+      const parts = last.split('.');
+      if (parts.length < 2) return '';
+      return parts.pop() || '';
+    })();
+
+    const processingMessage = currentExt
+      ? `Extracting text from ${currentExt.toUpperCase()}...`
+      : 'Extracting text...';
+
     return (
       <div className="min-h-screen relative">
         <GridBackground />
@@ -249,7 +268,7 @@
                   </Button>
                 )}
 
-                {isProcessing && <ProcessingIndicator />}
+                {isProcessing && <ProcessingIndicator message={processingMessage} />}
               </>
             ) : (
               <>

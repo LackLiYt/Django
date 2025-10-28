@@ -66,12 +66,9 @@ export function AccountPage({ user }: AccountPageProps) {
   }, [user])
 
   const sidebarItems = [
-    { icon: Home, label: "Dashboard", href: "/dashboard" },
+    { icon: Home, label: "Process a new file", href: "/private1" },
     { icon: UserIcon, label: "My Account", href: "/account", active: true },
     { icon: ShoppingCart, label: "Plans", href: "/plans" },
-    { icon: Bookmark, label: "Saved", href: "/saved" },
-    { icon: HelpCircle, label: "Helpdesk", href: "/helpdesk" },
-    { icon: Settings, label: "Settings", href: "/settings" },
   ]
   
   const handleInputChange = (field: string, value: string) => {
@@ -163,19 +160,6 @@ export function AccountPage({ user }: AccountPageProps) {
                 <div className="w-8 h-8 bg-primary rounded-sm flex items-center justify-center">
                   <div className="w-4 h-4 bg-primary-foreground rounded-sm"></div>
                 </div>
-                <nav className="hidden md:flex items-center gap-6">
-                  <a href="#" className="text-sm font-medium hover:text-primary">Discover Bonds</a>
-                  <a href="#" className="text-sm font-medium hover:text-primary">Collections</a>
-                  <a href="#" className="text-sm font-medium hover:text-primary">Pricing</a>
-                  <a href="#" className="text-sm font-medium hover:text-primary flex items-center gap-1">
-                    Resources
-                    <span className="text-xs">▼</span>
-                  </a>
-                  <a href="#" className="text-sm font-medium hover:text-primary flex items-center gap-1">
-                    About Us
-                    <span className="text-xs">▼</span>
-                  </a>
-                </nav>
               </div>
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">

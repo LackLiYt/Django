@@ -1,3 +1,6 @@
+// @ts-nocheck
+"use client"; // 👈 REQUIRED to prevent SSR hydration mismatches
+
 import { User, History, Settings, LogOut } from "lucide-react";
 import {
   DropdownMenu,
@@ -12,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 
 interface ProfileMenuProps {
   onShowHistory: () => void;
@@ -19,6 +23,7 @@ interface ProfileMenuProps {
 
 export default function ProfileMenu({ onShowHistory }: ProfileMenuProps) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const supabase = createClient();
@@ -27,66 +32,78 @@ export default function ProfileMenu({ onShowHistory }: ProfileMenuProps) {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user ?? null);
+
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         setUser(session?.user ?? null);
       });
+
       unsubscribe = () => subscription.unsubscribe();
     };
+
     init();
-    return () => { if (unsubscribe) unsubscribe(); };
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const handleSettings = () => {
-    // no-op for now
+    router.push('/account');
   };
 
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.href = '/login';
+    window.location.href = "/"; // 👈 go to landing page, not login
   };
 
-  const initials = (user?.email || 'U')
-    .split('@')[0]
-    .split(/[._-]/)
-    .map(part => part.charAt(0).toUpperCase())
-    .slice(0, 2)
-    .join('') || 'U';
+  const initials =
+    (user?.email || "U")
+      .split("@")[0]
+      .split(/[._-]/)
+      .map((part) => part.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join("") || "U";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="rounded-full"
           data-testid="button-profile"
         >
           <Avatar className="w-9 h-9">
             <AvatarImage src="" alt="User" />
             <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground">
-              JD
+              {initials}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium">{user?.email || 'Guest'}</p>
-            <p className="text-xs text-muted-foreground">{user?.id || ''}</p>
+            <p className="text-sm font-medium">{user?.email || "Guest"}</p>
+            <p className="text-xs text-muted-foreground">{user?.id || ""}</p>
           </div>
         </DropdownMenuLabel>
+
         <DropdownMenuSeparator />
+
         <DropdownMenuItem onClick={onShowHistory} data-testid="menu-history">
           <History className="w-4 h-4 mr-2" />
           Conversion History
         </DropdownMenuItem>
+
         <DropdownMenuItem onClick={handleSettings} data-testid="menu-settings">
           <Settings className="w-4 h-4 mr-2" />
           Settings
         </DropdownMenuItem>
+
         <DropdownMenuSeparator />
+
         <DropdownMenuItem onClick={handleLogout} data-testid="menu-logout">
           <LogOut className="w-4 h-4 mr-2" />
           Log out

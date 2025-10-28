@@ -1,5 +1,10 @@
+"use client"; // 👈 optional — or use dynamic import below
+
 import { FileText } from "lucide-react";
-import ProfileMenu from "@/components/ProfileMenu";
+import dynamic from "next/dynamic";
+
+// ✅ Dynamically import ProfileMenu (no SSR to avoid hydration mismatch)
+const ProfileMenu = dynamic(() => import("@/components/ProfileMenu"), { ssr: false });
 
 interface HeaderProps {
   onShowHistory: () => void;
@@ -21,7 +26,7 @@ export default function Header({ onShowHistory }: HeaderProps) {
               <p className="text-xs text-muted-foreground">Text Converter</p>
             </div>
           </div>
-          
+
           <ProfileMenu onShowHistory={onShowHistory} />
         </div>
       </div>
