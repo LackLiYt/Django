@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 
 
 export const metadata: Metadata = {
-  title: "Search Platform",
-  description: "Discover, explore, and find answers to your questions with our intelligent search platform.",
+  title: "Django",
+  description: "Discover, explore your documents - your way.",
 };
 
 // The main layout component
